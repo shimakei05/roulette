@@ -1,0 +1,159 @@
+<h2 class="sr-only">お出かけルーレット — スタートボタンで回転、ストップボタンで行き先を決定</h2>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+#app{display:flex;flex-direction:column;align-items:center;padding:1.5rem 1rem 2rem;gap:1.5rem}
+#title{font-size:22px;font-weight:500;color:var(--color-text-primary)}
+#subtitle{font-size:13px;color:var(--color-text-secondary);margin-top:-1rem}
+#wheel-wrap{position:relative;width:340px;height:340px}
+#canvas{border-radius:50%;display:block}
+#pointer{
+  position:absolute;top:-22px;left:50%;transform:translateX(-50%);
+  width:0;height:0;
+  border-left:13px solid transparent;
+  border-right:13px solid transparent;
+  border-top:32px solid #e05;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));
+}
+#btn{
+  padding:.75rem 2.5rem;font-size:16px;font-weight:500;
+  background:#e05;color:#fff;border:none;border-radius:999px;cursor:pointer;
+  transition:transform .1s,background .15s;
+  min-width:160px;
+}
+#btn:hover{opacity:.9}
+#btn:active{transform:scale(.97)}
+#result-box{
+  min-width:240px;text-align:center;padding:1rem 1.5rem;
+  background:var(--color-background-secondary);
+  border:0.5px solid var(--color-border-tertiary);
+  border-radius:var(--border-radius-lg);
+  display:none;
+}
+#result-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:.3rem}
+#result-text{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+</style>
+
+<div id="app">
+  <div id="title">お出かけルーレット</div>
+  <div id="subtitle">スタートして、ストップで行き先を決定！</div>
+
+  <div id="wheel-wrap">
+    <canvas id="canvas" width="340" height="340"></canvas>
+    <div id="pointer"></div>
+  </div>
+
+  <button id="btn">スタート！</button>
+
+  <div id="result-box">
+    <div id="result-label">今回の行き先</div>
+    <div id="result-text"></div>
+  </div>
+</div>
+
+<script>
+const items=[
+  "琵琶湖","城崎","兵庫美術館・中華街",
+  "天満（焼き鳥も）","中之島美術館","嵐山",
+  "焼き鳥","三十三間堂・御金神社","京都美術館","貴船神社・鞍馬寺"
+];
+const colors=[
+  "#FF6B6B","#FF9F43","#FECA57","#48DBFB","#1DD1A1",
+  "#54A0FF","#A29BFE","#FD79A8","#00B894","#E17055"
+];
+const n=items.length;
+const arc=2*Math.PI/n;
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+const cx=170,cy=170,r=160;
+let angle=0,spinning=false,raf=null;
+const speed=0.45;
+
+function wrapText(ctx,text,maxWidth){
+  let lines=[],line='';
+  for(let ch of text){
+    const test=line+ch;
+    if(ctx.measureText(test).width>maxWidth&&line.length>0){
+      lines.push(line);line=ch;
+    } else {line=test;}
+  }
+  if(line)lines.push(line);
+  return lines;
+}
+
+function draw(){
+  ctx.clearRect(0,0,340,340);
+  for(let i=0;i<n;i++){
+    const start=angle+i*arc;
+    const end=start+arc;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,end);
+    ctx.closePath();
+    ctx.fillStyle=colors[i];
+    ctx.fill();
+    ctx.strokeStyle="#fff";
+    ctx.lineWidth=2.5;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(start+arc/2);
+    ctx.textAlign="right";
+    ctx.fillStyle="#fff";
+    ctx.font="bold 13px var(--font-sans,sans-serif)";
+    ctx.shadowColor="rgba(0,0,0,.35)";
+    ctx.shadowBlur=3;
+    const maxW=r-28;
+    const lines=wrapText(ctx,items[i],maxW);
+    const lh=16;
+    const totalH=lines.length*lh;
+    lines.forEach((ln,li)=>{
+      ctx.fillText(ln,r-12,(-totalH/2+lh/2)+li*lh,maxW);
+    });
+    ctx.restore();
+  }
+  ctx.beginPath();
+  ctx.arc(cx,cy,22,0,2*Math.PI);
+  ctx.fillStyle="#fff";
+  ctx.fill();
+  ctx.strokeStyle="#ddd";
+  ctx.lineWidth=2;
+  ctx.stroke();
+}
+
+function getSelected(){
+  const pointerAngle=-Math.PI/2;
+  let relAngle=((pointerAngle-angle)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
+  const idx=Math.floor(relAngle/arc)%n;
+  return items[idx];
+}
+
+function loop(){
+  angle+=speed;
+  draw();
+  raf=requestAnimationFrame(loop);
+}
+
+const btn=document.getElementById("btn");
+btn.addEventListener("click",()=>{
+  if(!spinning){
+    spinning=true;
+    document.getElementById("result-box").style.display="none";
+    btn.textContent="ストップ！";
+    btn.style.background="#333";
+    loop();
+  } else {
+    cancelAnimationFrame(raf);
+    spinning=false;
+    btn.textContent="スタート！";
+    btn.style.background="#e05";
+    const sel=getSelected();
+    const rb=document.getElementById("result-box");
+    rb.style.display="block";
+    document.getElementById("result-text").textContent=sel;
+  }
+});
+
+draw();
+</script>
