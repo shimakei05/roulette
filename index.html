@@ -2,36 +2,36 @@
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-#app{display:flex;flex-direction:column;align-items:center;padding:1.5rem 1rem 2rem;gap:1.5rem}
+#app{display:flex;flex-direction:column;align-items:center;padding:1.5rem 1rem 2rem;gap:1.2rem}
 #title{font-size:22px;font-weight:500;color:var(--color-text-primary)}
-#subtitle{font-size:13px;color:var(--color-text-secondary);margin-top:-1rem}
-#wheel-wrap{position:relative;width:340px;height:340px}
-#canvas{border-radius:50%;display:block}
-#pointer{
+#subtitle{font-size:13px;color:var(--color-text-secondary);margin-top:-0.8rem;text-align:center}
+#wheel-wrap{position:relative}
+#pointer-top{
   position:absolute;top:-22px;left:50%;transform:translateX(-50%);
   width:0;height:0;
   border-left:13px solid transparent;
   border-right:13px solid transparent;
   border-top:32px solid #e05;
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));
+  z-index:2;
 }
 #btn{
-  padding:.75rem 2.5rem;font-size:16px;font-weight:500;
+  font-size:18px;font-weight:500;
   background:#e05;color:#fff;border:none;border-radius:999px;cursor:pointer;
   transition:transform .1s,background .15s;
-  min-width:160px;
+  width:200px;padding:.85rem 0;
 }
 #btn:hover{opacity:.9}
 #btn:active{transform:scale(.97)}
 #result-box{
-  min-width:240px;text-align:center;padding:1rem 1.5rem;
+  width:100%;max-width:320px;text-align:center;padding:1rem 1.5rem;
   background:var(--color-background-secondary);
   border:0.5px solid var(--color-border-tertiary);
   border-radius:var(--border-radius-lg);
   display:none;
 }
 #result-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:.3rem}
-#result-text{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+#result-text{font-size:22px;font-weight:500;color:var(--color-text-primary)}
 </style>
 
 <div id="app">
@@ -39,8 +39,8 @@
   <div id="subtitle">スタートして、ストップで行き先を決定！</div>
 
   <div id="wheel-wrap">
-    <canvas id="canvas" width="340" height="340"></canvas>
-    <div id="pointer"></div>
+    <div id="pointer-top"></div>
+    <canvas id="canvas"></canvas>
   </div>
 
   <button id="btn">スタート！</button>
@@ -63,9 +63,15 @@ const colors=[
 ];
 const n=items.length;
 const arc=2*Math.PI/n;
+
 const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
-const cx=170,cy=170,r=160;
+
+const size=Math.min(window.innerWidth-32, 500);
+canvas.width=size;
+canvas.height=size;
+const cx=size/2, cy=size/2, r=size/2-6;
+
 let angle=0,spinning=false,raf=null;
 const speed=0.45;
 
@@ -73,16 +79,17 @@ function wrapText(ctx,text,maxWidth){
   let lines=[],line='';
   for(let ch of text){
     const test=line+ch;
-    if(ctx.measureText(test).width>maxWidth&&line.length>0){
-      lines.push(line);line=ch;
-    } else {line=test;}
+    if(ctx.measureText(test).width>maxWidth&&line.length>0){lines.push(line);line=ch;}
+    else{line=test;}
   }
   if(line)lines.push(line);
   return lines;
 }
 
 function draw(){
-  ctx.clearRect(0,0,340,340);
+  ctx.clearRect(0,0,size,size);
+  const fs=Math.max(11, Math.round(size*0.038));
+  const lh=fs+4;
   for(let i=0;i<n;i++){
     const start=angle+i*arc;
     const end=start+arc;
@@ -101,20 +108,20 @@ function draw(){
     ctx.rotate(start+arc/2);
     ctx.textAlign="right";
     ctx.fillStyle="#fff";
-    ctx.font="bold 13px var(--font-sans,sans-serif)";
+    ctx.font=`bold ${fs}px sans-serif`;
     ctx.shadowColor="rgba(0,0,0,.35)";
     ctx.shadowBlur=3;
-    const maxW=r-28;
+    const maxW=r-r*0.18;
     const lines=wrapText(ctx,items[i],maxW);
-    const lh=16;
     const totalH=lines.length*lh;
     lines.forEach((ln,li)=>{
-      ctx.fillText(ln,r-12,(-totalH/2+lh/2)+li*lh,maxW);
+      ctx.fillText(ln,r-10,(-totalH/2+lh/2)+li*lh,maxW);
     });
     ctx.restore();
   }
+  const hubR=size*0.065;
   ctx.beginPath();
-  ctx.arc(cx,cy,22,0,2*Math.PI);
+  ctx.arc(cx,cy,hubR,0,2*Math.PI);
   ctx.fillStyle="#fff";
   ctx.fill();
   ctx.strokeStyle="#ddd";
@@ -123,17 +130,12 @@ function draw(){
 }
 
 function getSelected(){
-  const pointerAngle=-Math.PI/2;
-  let relAngle=((pointerAngle-angle)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
-  const idx=Math.floor(relAngle/arc)%n;
-  return items[idx];
+  const pa=-Math.PI/2;
+  let rel=((pa-angle)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
+  return items[Math.floor(rel/arc)%n];
 }
 
-function loop(){
-  angle+=speed;
-  draw();
-  raf=requestAnimationFrame(loop);
-}
+function loop(){angle+=speed;draw();raf=requestAnimationFrame(loop);}
 
 const btn=document.getElementById("btn");
 btn.addEventListener("click",()=>{
@@ -148,10 +150,9 @@ btn.addEventListener("click",()=>{
     spinning=false;
     btn.textContent="スタート！";
     btn.style.background="#e05";
-    const sel=getSelected();
     const rb=document.getElementById("result-box");
     rb.style.display="block";
-    document.getElementById("result-text").textContent=sel;
+    document.getElementById("result-text").textContent=getSelected();
   }
 });
 
