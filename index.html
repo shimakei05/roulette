@@ -1,42 +1,126 @@
-<h2 class="sr-only">お出かけルーレット — スタートボタンで回転、ストップボタンで行き先を決定</h2>
-
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>お出かけルーレット</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-#app{display:flex;flex-direction:column;align-items:center;padding:1.5rem 1rem 2rem;gap:1.2rem}
-#title{font-size:22px;font-weight:500;color:var(--color-text-primary)}
-#subtitle{font-size:13px;color:var(--color-text-secondary);margin-top:-0.8rem;text-align:center}
-#wheel-wrap{position:relative}
-#pointer-top{
-  position:absolute;top:-22px;left:50%;transform:translateX(-50%);
-  width:0;height:0;
-  border-left:13px solid transparent;
-  border-right:13px solid transparent;
-  border-top:32px solid #e05;
-  filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));
-  z-index:2;
-}
-#btn{
-  font-size:18px;font-weight:500;
-  background:#e05;color:#fff;border:none;border-radius:999px;cursor:pointer;
-  transition:transform .1s,background .15s;
-  width:200px;padding:.85rem 0;
-}
-#btn:hover{opacity:.9}
-#btn:active{transform:scale(.97)}
-#result-box{
-  width:100%;max-width:320px;text-align:center;padding:1rem 1.5rem;
-  background:var(--color-background-secondary);
-  border:0.5px solid var(--color-border-tertiary);
-  border-radius:var(--border-radius-lg);
-  display:none;
-}
-#result-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:.3rem}
-#result-text{font-size:22px;font-weight:500;color:var(--color-text-primary)}
-</style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sans-serif;
+    min-height:100vh;
+    background:linear-gradient(160deg,#fffde7 0%,#fff176 40%,#ffe082 100%);
+  }
 
+  #app{
+    display:flex;flex-direction:column;align-items:center;
+    padding:2rem 1rem 3rem;gap:1.5rem;
+  }
+
+  /* ヘッダー */
+  .header{text-align:center}
+  .header h1{
+    font-size:26px;font-weight:800;color:#5c4a00;
+    text-shadow:0 2px 8px rgba(0,0,0,.1);
+    letter-spacing:.5px;
+  }
+  .header p{
+    font-size:13px;color:rgba(90,70,0,.65);margin-top:.3rem;
+  }
+
+  /* ホイール */
+  #wheel-wrap{
+    position:relative;
+    filter:drop-shadow(0 8px 32px rgba(0,0,0,.3));
+  }
+  #pointer-top{
+    position:absolute;top:-24px;left:50%;transform:translateX(-50%);
+    width:0;height:0;
+    border-left:14px solid transparent;
+    border-right:14px solid transparent;
+    border-top:34px solid #f59f00;
+    z-index:2;
+    filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));
+  }
+
+  /* スピンボタン */
+  #btn{
+    font-size:18px;font-weight:700;
+    background:linear-gradient(135deg,#fff 0%,#f0f0f0 100%);
+    color:#e05;
+    border:none;border-radius:999px;cursor:pointer;
+    width:220px;padding:.9rem 0;
+    box-shadow:0 4px 20px rgba(0,0,0,.2);
+    transition:transform .1s,box-shadow .1s;
+    letter-spacing:.5px;
+  }
+  #btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.25)}
+  #btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(0,0,0,.2)}
+  #btn.stop{color:#333;background:linear-gradient(135deg,#fff 0%,#e8e8e8 100%)}
+
+  /* 結果ボックス */
+  #result-box{
+    width:100%;max-width:400px;text-align:center;
+    padding:1.2rem 1.5rem;
+    background:rgba(255,255,255,.95);
+    border-radius:20px;
+    display:none;
+    box-shadow:0 8px 32px rgba(0,0,0,.15);
+    animation:popIn .3s cubic-bezier(.175,.885,.32,1.275);
+  }
+  @keyframes popIn{
+    from{transform:scale(.85);opacity:0}
+    to{transform:scale(1);opacity:1}
+  }
+  #result-label{font-size:12px;color:#aaa;margin-bottom:.4rem;font-weight:500;letter-spacing:.5px}
+  #result-text{font-size:24px;font-weight:800;color:#333}
+
+  /* 履歴ボックス */
+  #history-box{
+    width:100%;max-width:400px;
+    background:rgba(255,255,255,.92);
+    border-radius:20px;
+    padding:1.2rem 1.2rem 1rem;
+    box-shadow:0 8px 32px rgba(0,0,0,.12);
+  }
+  .history-header{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:.8rem;
+  }
+  .history-header h2{font-size:15px;font-weight:700;color:#444}
+  #clear-btn{
+    font-size:11px;padding:.3rem .8rem;
+    background:#fff0f0;color:#e05;
+    border:1px solid #ffd0d0;border-radius:999px;cursor:pointer;
+    font-weight:600;transition:background .15s;
+  }
+  #clear-btn:hover{background:#ffe0e0}
+
+  #history-list{list-style:none;display:flex;flex-direction:column;gap:.4rem;max-height:280px;overflow-y:auto}
+  #history-list li{
+    display:flex;justify-content:space-between;align-items:center;
+    background:#fafafa;
+    border:1px solid #f0f0f0;
+    border-radius:10px;
+    padding:.55rem .9rem;
+    font-size:14px;
+    transition:background .1s;
+  }
+  #history-list li:hover{background:#f5f5f5}
+  #history-list li .dest{font-weight:700;color:#333}
+  #history-list li .time{font-size:11px;color:#bbb}
+  #history-loading{
+    text-align:center;font-size:13px;color:#bbb;padding:.5rem;
+    justify-content:center;
+  }
+</style>
+</head>
+<body>
 <div id="app">
-  <div id="title">お出かけルーレット</div>
-  <div id="subtitle">スタートして、ストップで行き先を決定！</div>
+  <div class="header">
+    <h1>🎯 お出かけルーレット</h1>
+    <p>スタートして、ストップで行き先を決定！</p>
+  </div>
 
   <div id="wheel-wrap">
     <div id="pointer-top"></div>
@@ -46,16 +130,34 @@
   <button id="btn">スタート！</button>
 
   <div id="result-box">
-    <div id="result-label">今回の行き先</div>
+    <div id="result-label">✨ 今回の行き先</div>
     <div id="result-text"></div>
+  </div>
+
+  <div id="history-box">
+    <div class="history-header">
+      <h2>📋 みんなの履歴</h2>
+      <button id="clear-btn">履歴を削除</button>
+    </div>
+    <ul id="history-list">
+      <li id="history-loading">読み込み中...</li>
+    </ul>
   </div>
 </div>
 
 <script>
+const SUPABASE_URL="https://wvamphdpwskdglkezazb.supabase.co";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2YW1waGRwd3NrZGdsa2V6YXpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNzg5MjAsImV4cCI6MjA5Mzk1NDkyMH0.WE4YEE030uCPm-8TZtkzoGKZHH-9fp6Ho7NkLcXdWgk";
+const HEADERS={
+  "Content-Type":"application/json",
+  "apikey":SUPABASE_KEY,
+  "Authorization":`Bearer ${SUPABASE_KEY}`
+};
+
 const items=[
-  "琵琶湖","城崎","兵庫美術館・中華街",
+  "琵琶湖・ボートレース","城崎","兵庫美術館・中華街",
   "天満（焼き鳥も）","中之島美術館","嵐山",
-  "焼き鳥","三十三間堂・御金神社","京都美術館","貴船神社・鞍馬寺"
+  "競馬（京都or阪神）","三十三間堂・御金神社","京都美術館","貴船神社・鞍馬寺"
 ];
 const colors=[
   "#FF6B6B","#FF9F43","#FECA57","#48DBFB","#1DD1A1",
@@ -63,15 +165,11 @@ const colors=[
 ];
 const n=items.length;
 const arc=2*Math.PI/n;
-
 const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
-
-const size=Math.min(window.innerWidth-32, 500);
-canvas.width=size;
-canvas.height=size;
-const cx=size/2, cy=size/2, r=size/2-6;
-
+const size=Math.min(window.innerWidth-32,500);
+canvas.width=size;canvas.height=size;
+const cx=size/2,cy=size/2,r=size/2-6;
 let angle=0,spinning=false,raf=null;
 const speed=0.45;
 
@@ -88,45 +186,29 @@ function wrapText(ctx,text,maxWidth){
 
 function draw(){
   ctx.clearRect(0,0,size,size);
-  const fs=Math.max(11, Math.round(size*0.038));
+  const fs=Math.max(11,Math.round(size*0.038));
   const lh=fs+4;
   for(let i=0;i<n;i++){
-    const start=angle+i*arc;
-    const end=start+arc;
-    ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,start,end);
-    ctx.closePath();
-    ctx.fillStyle=colors[i];
-    ctx.fill();
-    ctx.strokeStyle="#fff";
-    ctx.lineWidth=2.5;
-    ctx.stroke();
-
-    ctx.save();
-    ctx.translate(cx,cy);
-    ctx.rotate(start+arc/2);
-    ctx.textAlign="right";
-    ctx.fillStyle="#fff";
+    const start=angle+i*arc,end=start+arc;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
+    ctx.fillStyle=colors[i];ctx.fill();
+    ctx.strokeStyle="#fff";ctx.lineWidth=3;ctx.stroke();
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(start+arc/2);
+    ctx.textAlign="right";ctx.fillStyle="#fff";
     ctx.font=`bold ${fs}px sans-serif`;
-    ctx.shadowColor="rgba(0,0,0,.35)";
-    ctx.shadowBlur=3;
+    ctx.shadowColor="rgba(0,0,0,.4)";ctx.shadowBlur=4;
     const maxW=r-r*0.18;
     const lines=wrapText(ctx,items[i],maxW);
     const totalH=lines.length*lh;
-    lines.forEach((ln,li)=>{
-      ctx.fillText(ln,r-10,(-totalH/2+lh/2)+li*lh,maxW);
-    });
+    lines.forEach((ln,li)=>{ctx.fillText(ln,r-10,(-totalH/2+lh/2)+li*lh,maxW);});
     ctx.restore();
   }
-  const hubR=size*0.065;
-  ctx.beginPath();
-  ctx.arc(cx,cy,hubR,0,2*Math.PI);
-  ctx.fillStyle="#fff";
-  ctx.fill();
-  ctx.strokeStyle="#ddd";
-  ctx.lineWidth=2;
-  ctx.stroke();
+  const hubR=size*0.07;
+  const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,hubR);
+  grad.addColorStop(0,"#fff");grad.addColorStop(1,"#e8e8e8");
+  ctx.beginPath();ctx.arc(cx,cy,hubR,0,2*Math.PI);
+  ctx.fillStyle=grad;ctx.fill();
+  ctx.strokeStyle="#ccc";ctx.lineWidth=2;ctx.stroke();
 }
 
 function getSelected(){
@@ -137,24 +219,61 @@ function getSelected(){
 
 function loop(){angle+=speed;draw();raf=requestAnimationFrame(loop);}
 
+async function saveResult(result){
+  await fetch(`${SUPABASE_URL}/rest/v1/results`,{
+    method:"POST",headers:HEADERS,body:JSON.stringify({result})
+  });
+}
+
+async function loadHistory(){
+  const res=await fetch(`${SUPABASE_URL}/rest/v1/results?order=created_at.desc&limit=30`,{headers:HEADERS});
+  const data=await res.json();
+  const list=document.getElementById("history-list");
+  list.innerHTML="";
+  if(!data||data.length===0){
+    list.innerHTML='<li id="history-loading">まだ履歴がありません</li>';
+    return;
+  }
+  data.forEach(row=>{
+    const li=document.createElement("li");
+    const d=new Date(row.created_at);
+    const timeStr=`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`;
+    li.innerHTML=`<span class="dest">${row.result}</span><span class="time">${timeStr}</span>`;
+    list.appendChild(li);
+  });
+}
+
+async function clearHistory(){
+  if(!confirm("履歴を全件削除しますか？")) return;
+  await fetch(`${SUPABASE_URL}/rest/v1/results?id=gte.0`,{
+    method:"DELETE",headers:HEADERS
+  });
+  await loadHistory();
+}
+
 const btn=document.getElementById("btn");
-btn.addEventListener("click",()=>{
+btn.addEventListener("click",async()=>{
   if(!spinning){
     spinning=true;
     document.getElementById("result-box").style.display="none";
-    btn.textContent="ストップ！";
-    btn.style.background="#333";
+    btn.textContent="ストップ！";btn.classList.add("stop");
     loop();
   } else {
-    cancelAnimationFrame(raf);
-    spinning=false;
-    btn.textContent="スタート！";
-    btn.style.background="#e05";
+    cancelAnimationFrame(raf);spinning=false;
+    btn.textContent="スタート！";btn.classList.remove("stop");
+    const sel=getSelected();
     const rb=document.getElementById("result-box");
     rb.style.display="block";
-    document.getElementById("result-text").textContent=getSelected();
+    document.getElementById("result-text").textContent=sel;
+    await saveResult(sel);
+    await loadHistory();
   }
 });
 
+document.getElementById("clear-btn").addEventListener("click",clearHistory);
+
 draw();
+loadHistory();
 </script>
+</body>
+</html>
